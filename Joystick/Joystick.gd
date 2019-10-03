@@ -5,6 +5,9 @@ class_name Joystick
 # If the joystick is receiving inputs.
 var is_working := false
 
+# Which finger (index) is interacting with the joystick.
+var touch_index := -1
+
 # The joystick output.
 var output := Vector2.ZERO
 
@@ -56,20 +59,27 @@ func _gui_input(event: InputEvent) -> void:
 		if event.is_pressed():
 			var new_pos = event.position - _background.rect_size / 2
 			_background.rect_position = new_pos
-		else:
+		elif event.index == touch_index:
 			_background.rect_position = _original_position
 
 func _on_Background_gui_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
+			touch_index = event.index
 			_handle.modulate = _pressed_color
-		else:
+		elif event.index == touch_index:
+			set_deferred("touch_index", -1)
 			is_working = false
 			output = Vector2.ZERO
 			_set_handle_center_position(_background.rect_size / 2)
 			_handle.modulate = _original_color
-	
-	if event is InputEventScreenDrag:
+
+	elif event is InputEventScreenDrag:
+		if touch_index < 0:
+			touch_index = event.index
+		elif touch_index != event.index:
+			return
+
 		var vector : Vector2 = event.position - _background.rect_size / 2
 		var dead_size = dead_zone * _background.rect_size.x / 2
 		if vector.length() < dead_size:
@@ -77,7 +87,9 @@ func _on_Background_gui_input(event: InputEvent) -> void:
 			output = Vector2.ZERO
 			_set_handle_center_position(_background.rect_size / 2)
 			return
+
 		_update_output(vector)
+		touch_index = event.index
 		is_working = true
 		if joystick_mode == Joystick_mode.FOLLOWING:
 			_following(vector)
