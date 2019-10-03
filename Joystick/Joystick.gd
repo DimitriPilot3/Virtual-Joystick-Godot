@@ -41,6 +41,16 @@ onready var _handle := $Background/Handle
 onready var _original_color : Color = _handle.modulate
 onready var _original_position : Vector2 = _background.rect_position
 
+func _input(event: InputEvent) -> void:
+	# In a game project for Godot 3.1 with "Emulate Touch From Mouse" disabled,
+	# _gui_input cannot be notified of "touch release" events, whereas _input can.
+	# (Tested on a target running Android 9.)
+	#
+	# The following code is a (lazy) workaround or hack.
+	if event is InputEventScreenTouch and not event.pressed:
+		_gui_input(event)
+		_on_Background_gui_input(event)
+
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch and (joystick_mode == Joystick_mode.DYNAMIC or joystick_mode == Joystick_mode.FOLLOWING):
 		if event.is_pressed():
